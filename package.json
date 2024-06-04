@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "description": "backend for quirx",
   "main": "server.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/server.js"
   },
   "author": "Kuldeep Solanki",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.3"
+  }
 }
