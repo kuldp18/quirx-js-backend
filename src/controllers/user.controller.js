@@ -5,6 +5,7 @@ import { User } from '../models/user.model.js';
 import { uploadToCloudinary } from '../utils/cloudinary.js';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
+import { subscribe } from 'diagnostics_channel';
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -399,6 +400,79 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, 'Cover image updated successfully'));
 });
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+
+  if (!username?.trim()) {
+    throw new ApiError(400, 'Username is missing');
+  }
+
+  // aggregate returns an array of documents
+  const channel = await User.aggregate([
+    {
+      // match the username to get the user document
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      // join the subscriptions collection to get the subscribers
+      $lookup: {
+        from: 'subscriptions',
+        localField: '_id',
+        foreignField: 'channel',
+        as: 'subscibers',
+      },
+    },
+    {
+      // join the subscriptions collection to get the channels the user is subscribed to
+      $lookup: {
+        from: 'subscriptions',
+        localField: '_id',
+        foreignField: 'subscriber',
+        as: 'subscribedTo',
+      },
+    },
+    {
+      // add new fields to the document
+      $addFields: {
+        subscriberCount: { $size: '$subscibers' },
+        subscribedToCount: { $size: '$subscribedTo' },
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user._id, '$subscibers.subscriber'] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+
+    {
+      // only return the fields we need with the $project stage
+      $project: {
+        fullName: 1,
+        username: 1,
+        email: 1,
+        avatar: 1,
+        coverImage: 1,
+        subscriberCount: 1,
+        subscribedToCount: 1,
+        isSubscribed: 1,
+        createdAt: 1,
+      },
+    },
+  ]);
+
+  if (!channel?.length) {
+    throw new ApiError(404, 'Channel does not exist');
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel[0], 'Channel found successfully'));
+});
+
 export {
   registerUser,
   loginUser,
@@ -409,4 +483,5 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateCoverImage,
+  getUserChannelProfile,
 };
