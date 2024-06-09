@@ -5,6 +5,7 @@ import { User } from '../models/user.model.js';
 import { uploadToCloudinary } from '../utils/cloudinary.js';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
+import mongoose from 'mongoose';
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -319,7 +320,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
   await user.save({ validateBeforeSave: false });
 
-  const newUser = await User.findById(req.body._id).select(
+  const newUser = await User.findById(req.user._id).select(
     '-password -refreshToken'
   );
   return res
