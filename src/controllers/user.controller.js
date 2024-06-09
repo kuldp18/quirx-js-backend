@@ -357,8 +357,6 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(500, 'Something went wrong while updating avatar');
   }
 
-  removeLocalFiles([localAvatarPath]);
-
   return res
     .status(200)
     .json(new ApiResponse(200, user, 'Avatar updated successfully'));
@@ -392,8 +390,6 @@ const updateCoverImage = asyncHandler(async (req, res) => {
   if (!user) {
     throw new ApiError(500, 'Something went wrong while updating cover image');
   }
-
-  removeLocalFiles([localCoverImagePath]);
 
   return res
     .status(200)
