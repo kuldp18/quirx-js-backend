@@ -18,6 +18,12 @@ This project is created with:
 - Cookie-parser
 - Multer
 
+## Improvements
+
+Some improvements I added or will add to the project:
+
+- Delete existing avatar and cover images in cloudinary also when user edits them, to save cloud storage.
+
 ## 🚀 Setup
 
 To run this project, install it locally using npm:
