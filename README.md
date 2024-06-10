@@ -29,6 +29,8 @@ Some improvements I added or will add to the project:
 To run this project, install it locally using npm:
 
 ```sh
+git clone https://github.com/kuldp18/quirx-js-backend.git
+cd quirx-js-backend
 npm install
 npm run dev
 ```
