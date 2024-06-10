@@ -24,6 +24,10 @@ Some improvements I added or will add to the project:
 
 - Delete existing avatar and cover images in cloudinary also when user edits them, to save cloud storage.
 
+## Known Bugs
+
+- In register user controller, files are not deleted if user already exists while registering
+
 ## 🚀 Setup
 
 To run this project, install it locally using npm:
