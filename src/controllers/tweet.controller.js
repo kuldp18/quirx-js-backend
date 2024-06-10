@@ -77,7 +77,6 @@ const updateTweet = asyncHandler(async (req, res) => {
 
   const oldTweet = await Tweet.findById(tweetId);
 
-  // check if user is the owner of the tweet
   if (oldTweet.owner.toString() !== user._id.toString()) {
     throw new ApiError(
       403,
@@ -105,13 +104,34 @@ const updateTweet = asyncHandler(async (req, res) => {
 });
 
 const deleteTweet = asyncHandler(async (req, res) => {
-  //TODO: delete tweet
-  // check if user is logged in
-  // get tweet id from req.params
-  // validate tweet id
-  // check if user is the owner of the tweet
-  // delete the tweet
-  // return success response
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
+
+  const { tweetId } = req.params;
+  if (!tweetId) {
+    throw new ApiError(400, 'Tweet ID is required');
+  }
+
+  if (!isValidObjectId(tweetId)) {
+    throw new ApiError(400, 'Invalid Tweet ID');
+  }
+  const tweet = await Tweet.findById(tweetId);
+  if (tweet.owner.toString() !== user._id.toString()) {
+    throw new ApiError(
+      403,
+      'Unauthorized user, you are not the owner of the tweet'
+    );
+  }
+  const deletedTweet = await Tweet.findByIdAndDelete(tweetId, { new: true });
+  if (!deletedTweet) {
+    throw new ApiError(500, 'Something went wrong while deleting your tweet');
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, deletedTweet, 'Tweet deleted successfully'));
 });
 
 export { createTweet, getUserTweets, updateTweet, deleteTweet };
