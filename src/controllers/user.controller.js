@@ -74,6 +74,7 @@ const renewAccessToken = asyncHandler(async (req, res) => {
 const removeLocalFiles = (files) => {
   if (files) {
     files.forEach((file) => {
+      if (!file) return;
       fs.unlinkSync(file);
     });
   }
@@ -109,6 +110,7 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   if (doesUserExist) {
+    //BUG: files are not removed if user already exists
     removeLocalFiles([
       req.files?.avatar[0]?.path,
       req.files?.coverImage[0]?.path,
