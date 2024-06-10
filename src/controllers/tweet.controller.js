@@ -77,6 +77,14 @@ const updateTweet = asyncHandler(async (req, res) => {
 
   const oldTweet = await Tweet.findById(tweetId);
 
+  // check if user is the owner of the tweet
+  if (oldTweet.owner.toString() !== user._id.toString()) {
+    throw new ApiError(
+      403,
+      'Unauthorized user, you are not the owner of the tweet'
+    );
+  }
+
   if (oldTweet.content === content) {
     throw new ApiError(400, 'Content is same as the previous one');
   }
@@ -98,6 +106,12 @@ const updateTweet = asyncHandler(async (req, res) => {
 
 const deleteTweet = asyncHandler(async (req, res) => {
   //TODO: delete tweet
+  // check if user is logged in
+  // get tweet id from req.params
+  // validate tweet id
+  // check if user is the owner of the tweet
+  // delete the tweet
+  // return success response
 });
 
 export { createTweet, getUserTweets, updateTweet, deleteTweet };
