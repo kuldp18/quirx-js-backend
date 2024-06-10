@@ -56,7 +56,44 @@ const getUserTweets = asyncHandler(async (req, res) => {
 });
 
 const updateTweet = asyncHandler(async (req, res) => {
-  //TODO: update tweet
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
+  const { tweetId } = req.params;
+  const { content } = req.body;
+
+  if (!tweetId) {
+    throw new ApiError(400, 'Tweet ID is required');
+  }
+
+  if (!isValidObjectId(tweetId)) {
+    throw new ApiError(400, 'Invalid Tweet ID');
+  }
+
+  if (!content) {
+    throw new ApiError(400, 'Content is required');
+  }
+
+  const oldTweet = await Tweet.findById(tweetId);
+
+  if (oldTweet.content === content) {
+    throw new ApiError(400, 'Content is same as the previous one');
+  }
+
+  const newTweet = await Tweet.findByIdAndUpdate(
+    tweetId,
+    { content },
+    { new: true }
+  );
+
+  if (!newTweet) {
+    throw new ApiError(500, 'Something went wrong while updating your tweet');
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, newTweet, 'Tweet updated successfully'));
 });
 
 const deleteTweet = asyncHandler(async (req, res) => {
