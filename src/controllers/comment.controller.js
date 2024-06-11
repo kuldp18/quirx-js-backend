@@ -13,7 +13,6 @@ const getVideoComments = asyncHandler(async (req, res) => {
 });
 
 const addComment = asyncHandler(async (req, res) => {
-  // TODO: add a comment to a video
   const user = await User.findById(req.user._id);
   if (!user) {
     throw new ApiError(404, 'User not found or unauthorized');
@@ -59,7 +58,52 @@ const updateComment = asyncHandler(async (req, res) => {
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
-  // TODO: delete a comment
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
+  const { commentId } = req.params;
+  if (!commentId) {
+    throw new ApiError(400, 'Comment ID is required');
+  }
+  if (!isValidObjectId(commentId)) {
+    throw new ApiError(400, 'Invalid comment ID');
+  }
+
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    throw new ApiError(404, 'Comment not found');
+  }
+
+  if (comment.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, 'Unauthorized to delete this comment');
+  }
+
+  try {
+    await Comment.findByIdAndDelete(commentId);
+  } catch (error) {
+    console.log(`Error deleting comment: ${error}`);
+    return res
+      .status(500)
+      .json(
+        new ApiResponse(
+          500,
+          null,
+          'Something went wrong while deleting comment'
+        )
+      );
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        _id: commentId,
+      },
+      'Comment deleted successfully'
+    )
+  );
 });
 
 export { getVideoComments, addComment, updateComment, deleteComment };
