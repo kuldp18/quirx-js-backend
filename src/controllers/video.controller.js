@@ -97,8 +97,22 @@ const publishAVideo = asyncHandler(async (req, res) => {
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
   const { videoId } = req.params;
-  //TODO: get video by id
+  if (!videoId) {
+    throw new ApiError(400, 'Please provide a video id');
+  }
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, 'Invalid video id');
+  }
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, 'Video not found');
+  }
+  return res.status(200).json(new ApiResponse(200, video, 'Video found'));
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
