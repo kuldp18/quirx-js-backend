@@ -119,9 +119,126 @@ const getVideoById = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, video, 'Video found'));
 });
 
-const updateVideo = asyncHandler(async (req, res) => {
+const updateVideoDetails = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
   const { videoId } = req.params;
-  //TODO: update video details like title, description, thumbnail
+  if (!videoId) {
+    throw new ApiError(400, 'Please provide a video id');
+  }
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, 'Invalid video id');
+  }
+
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, 'Video not found');
+  }
+
+  const { title, description } = req.body;
+
+  if (!title && !description) {
+    throw new ApiError(400, 'Please provide title or description to update');
+  }
+
+  const updatedVideo = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      title: title || video.title,
+      description: description || video.description,
+    },
+    { new: true }
+  );
+
+  if (!updatedVideo) {
+    throw new ApiError(
+      500,
+      'Something went wrong while updating the video details'
+    );
+  }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedVideo, 'Video updated'));
+});
+
+const updateVideoThumbnail = asyncHandler(async (req, res) => {
+  // TODO: update video thumbnail
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
+  const { videoId } = req.params;
+  if (!videoId) {
+    throw new ApiError(400, 'Please provide a video id');
+  }
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, 'Invalid video id');
+  }
+
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(404, 'Video not found');
+  }
+
+  const localThumbnail = req.file ? req.file?.path : '';
+  if (!localThumbnail) {
+    throw new ApiError(400, 'Please upload a thumbnail to update');
+  }
+  // check if thumbnail is an image
+  const getExtension = (filename) => filename.split('.').pop();
+  if (
+    getExtension(localThumbnail) !== 'jpg' &&
+    getExtension(localThumbnail) !== 'jpeg' &&
+    getExtension(localThumbnail) !== 'png'
+  ) {
+    throw new ApiError(
+      400,
+      'Please upload a thumbnail in jpg, jpeg, or png format'
+    );
+  }
+
+  // remove old thumbnail from cloudinary
+  const deletedThumbnail = await deleteCloudinaryImage(video.thumbnail);
+  if (!deletedThumbnail) {
+    throw new ApiError(
+      500,
+      'Something went wrong while deleting the old thumbnail'
+    );
+  }
+  // upload new thumbnail to cloudinary
+  const newThumbnail = await uploadToCloudinary(localThumbnail);
+  if (!newThumbnail) {
+    throw new ApiError(
+      500,
+      'Something went wrong while updating the new thumbnail'
+    );
+  }
+
+  const newThumbnailUrl = newThumbnail?.url;
+
+  // update the video with the new thumbnail
+  const updatedVideo = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      thumbnail: newThumbnailUrl,
+    },
+    { new: true }
+  );
+
+  if (!updatedVideo) {
+    throw new ApiError(
+      500,
+      'Something went wrong while updating the video thumbnail in db'
+    );
+  }
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedVideo, 'Video thumbnail updated successfully')
+    );
 });
 
 const deleteVideo = asyncHandler(async (req, res) => {
@@ -199,7 +316,8 @@ export {
   getAllVideos,
   publishAVideo,
   getVideoById,
-  updateVideo,
+  updateVideoDetails,
+  updateVideoThumbnail,
   deleteVideo,
   togglePublishStatus,
 };
