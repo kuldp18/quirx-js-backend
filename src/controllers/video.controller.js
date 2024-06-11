@@ -4,7 +4,11 @@ import { User } from '../models/user.model.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { uploadToCloudinary } from '../utils/cloudinary.js';
+import {
+  uploadToCloudinary,
+  deleteCloudinaryImage,
+  deleteCloudinaryVideo,
+} from '../utils/cloudinary.js';
 import fs from 'fs';
 
 const removeLocalFiles = (files) => {
@@ -142,7 +146,19 @@ const deleteVideo = asyncHandler(async (req, res) => {
     throw new ApiError(403, 'Unauthorized to delete this video');
   }
 
+  // delete video from cloudinary
+  const deletedVideo = await deleteCloudinaryVideo(video.videoFile);
+  const deletedThumbnail = await deleteCloudinaryImage(video.thumbnail);
+
+  if (!deletedVideo || !deletedThumbnail) {
+    throw new ApiError(
+      500,
+      'Something went wrong while deleting the video files from cloudinary'
+    );
+  }
+
   await Video.findByIdAndDelete(videoId);
+
   return res
     .status(200)
     .json(new ApiResponse(200, null, 'Video deleted successfully'));
