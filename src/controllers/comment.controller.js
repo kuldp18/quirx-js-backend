@@ -55,6 +55,49 @@ const addComment = asyncHandler(async (req, res) => {
 
 const updateComment = asyncHandler(async (req, res) => {
   // TODO: update a comment
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
+  const { commentId } = req.params;
+  const { content } = req.body;
+
+  if (!commentId) {
+    throw new ApiError(400, 'Comment ID is required');
+  }
+
+  if (!isValidObjectId(commentId)) {
+    throw new ApiError(400, 'Invalid comment ID');
+  }
+
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    throw new ApiError(404, 'Comment not found');
+  }
+
+  if (!content || content === comment.content) {
+    throw new ApiError(400, 'Comment cannot be empty or same as previous');
+  }
+
+  // check if user is the owner of the comment
+  if (comment.owner.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, 'Unauthorized to update this comment');
+  }
+
+  const newComment = await Comment.findByIdAndUpdate(
+    commentId,
+    { content },
+    { new: true }
+  );
+
+  if (!newComment) {
+    throw new ApiError(500, 'Something went wrong while updating your comment');
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, newComment, 'Comment updated successfully'));
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
