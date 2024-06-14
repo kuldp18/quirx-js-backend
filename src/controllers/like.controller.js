@@ -130,7 +130,25 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 });
 
 const getLikedVideos = asyncHandler(async (req, res) => {
-  //TODO: get all liked videos
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
+
+  const likedVideos = await Like.find({
+    likedBy: user._id,
+    video: { $ne: null },
+  });
+
+  if (!likedVideos || likedVideos.length === 0) {
+    throw new ApiError(404, 'No liked videos found');
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, likedVideos, 'Liked videos fetched successfully')
+    );
 });
 
 export { toggleCommentLike, toggleTweetLike, toggleVideoLike, getLikedVideos };
