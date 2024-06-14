@@ -32,8 +32,39 @@ const createPlaylist = asyncHandler(async (req, res) => {
 });
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
+  const loggedInUser = await User.findById(req.user._id);
+  if (!loggedInUser) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
   const { userId } = req.params;
-  //TODO: get user playlists
+
+  if (!userId) {
+    throw new ApiError(400, 'User ID is required');
+  }
+
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(400, 'Invalid user ID');
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  const userPlaylists = await Playlist.find({ owner: userId });
+  if (!userPlaylists) {
+    throw new ApiError(404, 'No playlists found for this user');
+  }
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        userPlaylists,
+        'User playlists retrieved successfully'
+      )
+    );
 });
 
 const getPlaylistById = asyncHandler(async (req, res) => {
