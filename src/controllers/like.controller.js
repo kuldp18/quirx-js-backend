@@ -6,6 +6,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { User } from '../models/user.model.js';
 import { Video } from '../models/video.model.js';
 import { Comment } from '../models/comment.model.js';
+import { Tweet } from '../models/tweet.model.js';
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
@@ -91,8 +92,41 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
 });
 
 const toggleTweetLike = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
   const { tweetId } = req.params;
-  //TODO: toggle like on tweet
+  if (!tweetId) {
+    throw new ApiError(400, 'Invalid tweet id');
+  }
+
+  if (!isValidObjectId(tweetId)) {
+    throw new ApiError(400, 'Invalid tweet id');
+  }
+
+  const tweet = await Tweet.findById(tweetId);
+  if (!tweet) {
+    throw new ApiError(404, 'Tweet not found');
+  }
+
+  const tweetLike = await Like.findOne({ tweet: tweetId, likedBy: user._id });
+
+  if (!tweetLike) {
+    const newTweetLike = await Like.create({
+      tweet: tweetId,
+      likedBy: user._id,
+    });
+    return res
+      .status(201)
+      .json(new ApiResponse(201, newTweetLike, 'Tweet liked successfully'));
+  }
+
+  // delete tweet like
+  await Like.findByIdAndDelete(tweetLike._id);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, 'Tweet like removed successfully'));
 });
 
 const getLikedVideos = asyncHandler(async (req, res) => {
