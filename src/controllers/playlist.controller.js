@@ -4,6 +4,7 @@ import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { User } from '../models/user.model.js';
+import { Video } from '../models/video.model.js';
 
 const createPlaylist = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
@@ -91,7 +92,66 @@ const getPlaylistById = asyncHandler(async (req, res) => {
 });
 
 const addVideoToPlaylist = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
+
   const { playlistId, videoId } = req.params;
+
+  if (!playlistId || !videoId) {
+    throw new ApiError(400, 'Playlist ID and Video ID are required');
+  }
+
+  if (!isValidObjectId(playlistId)) {
+    throw new ApiError(400, 'Invalid playlist ID');
+  }
+
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, 'Invalid video ID');
+  }
+
+  const playlist = await Playlist.findById(playlistId);
+  const video = await Video.findById(videoId);
+
+  if (!playlist || !video) {
+    throw new ApiError(404, 'Playlist or Video not found');
+  }
+
+  // check if the user is the owner of the playlist
+  if (playlist.owner.toString() !== user._id.toString()) {
+    throw new ApiError(
+      403,
+      'You are not authorized to add video to this playlist'
+    );
+  }
+
+  // check if the video is already in the playlist
+  if (playlist.videos.includes(videoId)) {
+    throw new ApiError(400, 'Video already exists in the playlist');
+  }
+
+  playlist.videos.push(videoId);
+
+  const updatedPlaylist = await playlist.save();
+
+  if (!updatedPlaylist) {
+    throw new ApiError(
+      500,
+      'Something went wrong while adding video to playlist'
+    );
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updatedPlaylist,
+        'Video added to playlist successfully'
+      )
+    );
 });
 
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
