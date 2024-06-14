@@ -3,11 +3,32 @@ import { Playlist } from '../models/playlist.model.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { User } from '../models/user.model.js';
 
 const createPlaylist = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
   const { name, description } = req.body;
 
-  //TODO: create playlist
+  if (!name) {
+    throw new ApiError(400, 'Name is required');
+  }
+
+  const playlist = await Playlist.create({
+    name,
+    description: description || '',
+    owner: user._id,
+  });
+
+  if (!playlist) {
+    throw new ApiError(500, 'Something went wrong while creating playlist');
+  }
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, playlist, 'Playlist created successfully'));
 });
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
