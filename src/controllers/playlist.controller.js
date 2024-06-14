@@ -105,9 +105,55 @@ const deletePlaylist = asyncHandler(async (req, res) => {
 });
 
 const updatePlaylist = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
+
   const { playlistId } = req.params;
+  if (!playlistId) {
+    throw new ApiError(400, 'Playlist ID is required');
+  }
+
+  if (!isValidObjectId(playlistId)) {
+    throw new ApiError(400, 'Invalid playlist ID');
+  }
+
+  const playlist = await Playlist.findById(playlistId);
+  if (!playlist) {
+    throw new ApiError(404, 'Playlist not found');
+  }
+
   const { name, description } = req.body;
-  //TODO: update playlist
+
+  if (!name && !description) {
+    throw new ApiError(
+      400,
+      'Name or description is required to update playlist'
+    );
+  }
+
+  // check if the user is the owner of the playlist
+  if (playlist.owner.toString() !== user._id.toString()) {
+    throw new ApiError(403, 'You are not authorized to update this playlist');
+  }
+
+  const newPlaylist = await Playlist.findByIdAndUpdate(
+    playlistId,
+    {
+      name: name || playlist.name,
+      description: description || playlist.description,
+    },
+    { new: true }
+  );
+
+  if (!newPlaylist) {
+    throw new ApiError(500, 'Something went wrong while updating playlist');
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, newPlaylist, 'Playlist updated successfully'));
 });
 
 export {
