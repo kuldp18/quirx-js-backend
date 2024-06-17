@@ -7,9 +7,42 @@ import { isValidObjectId } from 'mongoose';
 import { Video } from '../models/video.model.js';
 
 const getVideoComments = asyncHandler(async (req, res) => {
-  //TODO: get all comments for a video
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found or unauthorized');
+  }
   const { videoId } = req.params;
   const { page = 1, limit = 10 } = req.query;
+
+  if (!videoId) {
+    throw new ApiError(400, 'Video ID is required');
+  }
+
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, 'Invalid video ID');
+  }
+
+  if (!page || !limit) {
+    throw new ApiError(400, 'Page and limit query parameters are required');
+  }
+
+  if (isNaN(page) || isNaN(limit)) {
+    throw new ApiError(400, 'Page and limit must be numbers');
+  }
+
+  let commentAggregate = Comment.aggregate();
+  Comment.aggregatePaginate(commentAggregate, { page, limit })
+    .then((results) => {
+      return res
+        .status(200)
+        .json(new ApiResponse(200, results, 'Comments retrieved successfully'));
+    })
+    .catch((error) => {
+      console.log(`Error getting comments: ${error}`);
+      return res
+        .status(500)
+        .json(new ApiError(500, 'Something went wrong while getting comments'));
+    });
 });
 
 const addComment = asyncHandler(async (req, res) => {
