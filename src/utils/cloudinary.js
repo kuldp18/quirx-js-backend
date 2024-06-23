@@ -19,10 +19,41 @@ const uploadToCloudinary = async (localFilePath) => {
     return res;
   } catch (error) {
     // remove bad local file
+    if (!localFilePath) return null;
     fs.unlinkSync(localFilePath);
     console.log(`Error while uploading file to cloudinary: ${error}`);
     return null;
   }
 };
 
-export { uploadToCloudinary };
+const deleteCloudinaryImage = async (url) => {
+  try {
+    const publicId = extractPublicId(url);
+    const res = await cloudinary.uploader.destroy(publicId);
+    return res;
+  } catch (error) {
+    console.log(`Error while deleting image from cloudinary: ${error}`);
+    return null;
+  }
+};
+
+const deleteCloudinaryVideo = async (url) => {
+  try {
+    const publicId = extractPublicId(url);
+    const res = await cloudinary.uploader.destroy(publicId, {
+      resource_type: 'video',
+    });
+    return res;
+  } catch (error) {
+    console.log(`Error while deleting video from cloudinary: ${error}`);
+    return null;
+  }
+};
+
+const extractPublicId = (url) => {
+  const parts = url.split('/');
+  const publicId = parts[parts.length - 1].split('.')[0];
+  return publicId;
+};
+
+export { uploadToCloudinary, deleteCloudinaryImage, deleteCloudinaryVideo };
