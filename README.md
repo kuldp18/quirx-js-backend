@@ -1,4 +1,4 @@
-# 🚀 Quirx Backend 🚀
+# 🚀 Quirx Backend
 
 This is the backend written in Node.js for Quirx, a video sharing platform.
 
